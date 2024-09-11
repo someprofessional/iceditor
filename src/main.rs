@@ -5,9 +5,11 @@ use std::sync::Arc;
 use iced::{Font ,executor, Application, Command, Element, Length, Settings, Theme};
 use iced::widget::{button, column, container, horizontal_space, row, text, text_editor, tooltip};
 use iced::theme;
+use iced::highlighter::{self, Highlighter};
 
 fn main() -> iced::Result {
     Editor::run(Settings{
+        default_font: Font::MONOSPACE,
         fonts: vec![include_bytes!("../fonts/editor-icons.ttf")
         .as_slice()
         .into()],
@@ -107,7 +109,12 @@ impl Application for Editor {
             action(save_icon(), "Save file", Message::Save)
         ].spacing(10).into();
 
-        let input = text_editor(&self.content).on_edit(Message::Edit).into();
+        let input = text_editor(&self.content).on_edit(Message::Edit).highlight::<Highlighter>(highlighter::Settings {
+            theme: highlighter::Theme::SolarizedDark,
+            extension: self.path.as_ref().and_then(|path| path.extension()?.to_str()).unwrap_or("rs").to_string(),
+        }, |highlight, _theme| {
+            highlight.to_format()
+        }).into();
 
         let status = if let Some(Error::IOFailed(error)) = self.error.as_ref() {
             text(error.to_string())
